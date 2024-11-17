@@ -1,11 +1,22 @@
-FROM maven:3.8.1-jdk-11 AS build
-WORKDIR /app
-COPY pom.xml .
-RUN mvn dependency:go-offline
-COPY src .
-RUN mvn package -DskipTests
+# Используем официальный образ Maven
+FROM maven:3.9.4-eclipse-temurin-17 AS builder
 
-FROM openjdk:11-jdk-slim
+# Устанавливаем рабочую директорию
 WORKDIR /app
-COPY --from=build /app/target/*.jar app.jar
-ENTRYPOINT ["java","-jar","/app/app.jar"]
+
+# Копируем pom.xml и весь код проекта
+COPY app/pom.xml .
+COPY app/src ./src
+
+# Выполняем сборку проекта
+RUN mvn clean package -DskipTests
+
+# Используем легковесный образ JDK для запуска
+FROM eclipse-temurin:17-jre
+
+# Копируем готовый JAR из сборочной стадии
+COPY --from=builder /app/target/*.jar /app/app.jar
+
+# Устанавливаем рабочую директорию и точку входа
+WORKDIR /app
+ENTRYPOINT ["java", "-jar", "app.jar"]
