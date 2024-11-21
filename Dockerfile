@@ -1,22 +1,12 @@
-# Используем официальный образ Maven
-FROM maven:3.9.4-eclipse-temurin-17 AS builder
-
-# Устанавливаем рабочую директорию
+# Используем образ Maven для сборки
+FROM maven:3.8.4-openjdk-17 AS build
 WORKDIR /app
-
-# Копируем pom.xml и весь код проекта
-COPY app/pom.xml .
-COPY app/src ./src
-
-# Выполняем сборку проекта
+COPY demo/pom.xml ./
+COPY demo/src ./src
 RUN mvn clean package -DskipTests
 
-# Используем легковесный образ JDK для запуска
-FROM eclipse-temurin:17-jre
-
-# Копируем готовый JAR из сборочной стадии
-COPY --from=builder /app/target/*.jar /app/app.jar
-
-# Устанавливаем рабочую директорию и точку входа
+# Используем образ OpenJDK для запуска
+FROM openjdk:17
 WORKDIR /app
+COPY --from=build /app/target/demo-0.0.1-SNAPSHOT.jar app.jar
 ENTRYPOINT ["java", "-jar", "app.jar"]
